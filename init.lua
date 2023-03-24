@@ -5,7 +5,6 @@
 =====================================================================
 
 Kickstart.nvim is *not* a distribution.
-
 Kickstart.nvim is a template for your own configuration.
   The goal is that you can read every line of code, top-to-bottom, and understand
   what your configuration is doing.
@@ -81,6 +80,9 @@ require('lazy').setup({
       -- Automatically install LSPs to stdpath for neovim
       'williamboman/mason.nvim',
       'williamboman/mason-lspconfig.nvim',
+      -- nvim-dap related dependendices
+      'jay-babu/mason-nvim-dap.nvim',
+      'rcarriga/nvim-dap-ui',
 
       -- Useful status updates for LSP
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
@@ -407,18 +409,18 @@ end
 --  Add any additional override configuration in the following tables. They will be passed to
 --  the `settings` field of the server config. You must look up that documentation yourself.
 local servers = {
-  -- clangd = {},
+  clangd = {},
   -- gopls = {},
-  -- pyright = {},
+  pyright = {},
   -- rust_analyzer = {},
   -- tsserver = {},
 
-  lua_ls = {
-    Lua = {
-      workspace = { checkThirdParty = false },
-      telemetry = { enable = false },
-    },
-  },
+  -- lua_ls = {
+  --   Lua = {
+  --     workspace = { checkThirdParty = false },
+  --     telemetry = { enable = false },
+  --   },
+  -- },
 }
 
 -- Setup neovim lua configuration
@@ -492,6 +494,45 @@ cmp.setup {
     { name = 'luasnip' },
   },
 }
+
+
+-- mason-nvim-dap setup
+local dap = require("dap")
+
+require('mason-nvim-dap').setup({
+  -- automatic_setup = true,
+  ensure_installed = {"python", "cppdbg"}
+})
+
+require 'mason-nvim-dap'.setup_handlers {
+  function(source_name)
+    -- all sources with no handler get passed here
+    -- Keep original functionality of `automatic_setup = true`
+    -- require('mason-nvim-dap.automatic_setup')(source_name)
+  end,
+  python = function(source_name)
+    dap.adapters.python = {
+	    type = "executable",
+	    command = "python",
+	    args = {
+	      "-m",
+	      "debugpy.adapter",
+	    },
+    }
+
+    dap.configurations.python = {
+      {
+		    type = "python",
+		    request = "launch",
+		    name = "Launch file",
+		    program = "${file}", -- This configuration will launch the current file if used.
+	    },
+    }
+  end,
+}
+
+-- dapui setup
+require('dapui').setup()
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
